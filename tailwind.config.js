@@ -2,6 +2,10 @@
 export default {
     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
+        fontFamily: {
+            one: ["Matter SQ Light"],
+            two: ["Matter SQ Regular"],
+        },
         extend: {},
     },
     plugins: [],
