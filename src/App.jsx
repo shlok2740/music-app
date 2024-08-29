@@ -1,9 +1,19 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import Home from "./components/Home";
-import Sidebar from "./components/Sidebar";
 import MyMusic from "./components/MyMusic";
+import Sidebar from "./components/Sidebar";
+import Stats from "./components/Stats";
 import Summary from "./components/Summary";
 import CSV from "./csv/CSV";
+import Searchbar from "./components/Searchbar";
+
+const routes = [
+    { path: "/", element: <Home /> },
+    { path: "/my-music", element: <MyMusic /> },
+    { path: "/summary", element: <Summary /> },
+    { path: "/stats", element: <Stats /> },
+    { path: "/add-csv", element: <CSV /> },
+];
 
 function App() {
     return (
@@ -13,11 +23,11 @@ function App() {
                     <Sidebar />
                 </aside>
                 <main className="flex-1 overflow-y-auto">
+                    <Searchbar/>
                     <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/my-music" element={<MyMusic />} />
-                        <Route path="/summary" element={<Summary />} />
-                        <Route path="/add-csv" element={<CSV />} />
+                        {routes.map(({ path, element }) => (
+                            <Route key={path} path={path} element={element} />
+                        ))}
                     </Routes>
                 </main>
             </div>
