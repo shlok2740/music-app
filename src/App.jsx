@@ -22,6 +22,7 @@ function App() {
                     <Sidebar />
                 </aside>
                 <main className="flex-1 overflow-y-auto">
+
                     <Routes>
                         {routes.map(({ path, element }) => (
                             <Route key={path} path={path} element={element} />

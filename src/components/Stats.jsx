@@ -162,7 +162,6 @@ const Stats = () => {
         const container = containerRef.current;
         const width = container.clientWidth;
         const height = Math.min(width, window.innerHeight - 30);
-        // You can store these values in state or ref if needed for createDendrogram
     }, []);
 
     const debouncedSetSelectedSong = useMemo(
@@ -184,10 +183,26 @@ const Stats = () => {
             ) : (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                        <StatCard title="Unique Songs" value={stats.uniqueSongs} />
-                        <StatCard title="Unique Albums" value={stats.uniqueAlbums} />
-                        <StatCard title="Unique Artists" value={stats.uniqueArtists} />
+                        <StatCard
+                            title="Unique Songs"
+                            value={stats.uniqueSongs}
+                        />
+                        <StatCard
+                            title="Unique Albums"
+                            value={stats.uniqueAlbums}
+                        />
+                        <StatCard
+                            title="Unique Artists"
+                            value={stats.uniqueArtists}
+                        />
                     </div>
+                    <h2 className="text-2xl font-bold mb-4 text-indigo-600">
+                        Connection to your song
+                    </h2>
+                    <h4 className="text-lg font-bold mb-4">
+                        Find out about the song which has the same artist as
+                        your song
+                    </h4>
                     <div className="m-4">
                         <div className="relative">
                             <input
@@ -225,7 +240,6 @@ const Stats = () => {
             )}
         </div>
     );
-    
 };
 
 export default Stats;

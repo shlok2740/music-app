@@ -115,11 +115,16 @@ const Summary = () => {
                 text: "Song Duration Distribution (minutes)",
             },
         },
+        animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 2000,
+            easing: "easeOutQuart",
+        },
     };
 
     return (
-        <div>
-            <h2 className="text-2xl font-bold mb-4">Summary of the list</h2>
+        <div className="m-2">
             {error && <p className="text-red-500">{error}</p>}
             {rawData.length > 0 ? (
                 <>
