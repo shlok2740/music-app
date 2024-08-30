@@ -1,5 +1,13 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, {
+    useEffect,
+    useState,
+    useRef,
+    useMemo,
+    useCallback,
+    useLayoutEffect,
+} from "react";
 import * as d3 from "d3";
+import { debounce } from "lodash";
 
 const Stats = () => {
     const [stats, setStats] = useState({
@@ -12,35 +20,33 @@ const Stats = () => {
     const svgRef = useRef();
     const containerRef = useRef();
 
-    useEffect(() => {
-        const calculateStats = () => {
-            const data = JSON.parse(localStorage.getItem("csvData") || "[]");
-            setCsvData(data);
+    const memoizedStats = useMemo(() => {
+        const data = JSON.parse(localStorage.getItem("csvData") || "[]");
+        const uniqueSongs = new Set(data.map((row) => row.Track)).size;
+        const uniqueAlbums = new Set(data.map((row) => row.Album)).size;
+        const uniqueArtists = new Set(data.map((row) => row.Artist)).size;
 
-            const uniqueSongs = new Set(data.map((row) => row.Track)).size;
-            const uniqueAlbums = new Set(data.map((row) => row.Album)).size;
-            const uniqueArtists = new Set(data.map((row) => row.Artist)).size;
-
-            setStats({
-                uniqueSongs,
-                uniqueAlbums,
-                uniqueArtists,
-            });
+        return {
+            uniqueSongs,
+            uniqueAlbums,
+            uniqueArtists,
+            csvData: data,
         };
-
-        calculateStats();
     }, []);
 
     useEffect(() => {
-        if (selectedSong && csvData.length > 0) {
-            createDendrogram();
-        }
-    }, [selectedSong, csvData]);
+        setStats({
+            uniqueSongs: memoizedStats.uniqueSongs,
+            uniqueAlbums: memoizedStats.uniqueAlbums,
+            uniqueArtists: memoizedStats.uniqueArtists,
+        });
+        setCsvData(memoizedStats.csvData);
+    }, [memoizedStats]);
 
-    const createDendrogram = () => {
+    const createDendrogram = useCallback(() => {
         const container = containerRef.current;
         const width = container.clientWidth;
-        const height = Math.min(width, window.innerHeight - 30); // Adjust the 300 value as needed
+        const height = Math.min(width, window.innerHeight - 30);
         const radius = Math.min(width, height) / 2;
 
         d3.select(svgRef.current).selectAll("*").remove();
@@ -140,56 +146,86 @@ const Stats = () => {
             )
             .attr("transform", (d) => (d.x >= 180 ? "rotate(180)" : null))
             .text((d) => d.data.name);
-    };
+    }, [selectedSong, csvData]);
 
-    const StatCard = ({ title, value }) => (
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        if (selectedSong && csvData.length > 0) {
+            createDendrogram();
+        }
+        setIsLoading(false);
+    }, [selectedSong, csvData, createDendrogram]);
+
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        const width = container.clientWidth;
+        const height = Math.min(width, window.innerHeight - 30);
+        // You can store these values in state or ref if needed for createDendrogram
+    }, []);
+
+    const debouncedSetSelectedSong = useMemo(
+        () => debounce((value) => setSelectedSong(value), 300),
+        []
+    );
+
+    const StatCard = React.memo(({ title, value }) => (
         <div className="bg-white p-4 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold mb-2">{title}</h3>
             <p className="text-2xl">{value}</p>
         </div>
-    );
+    ));
 
     return (
         <div className="mt-6 mx-2" ref={containerRef}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <StatCard title="Unique Songs" value={stats.uniqueSongs} />
-                <StatCard title="Unique Albums" value={stats.uniqueAlbums} />
-                <StatCard title="Unique Artists" value={stats.uniqueArtists} />
-            </div>
-            <div className="m-4">
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search for a song"
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={selectedSong}
-                        onChange={(e) => setSelectedSong(e.target.value)}
-                        list="song-list"
-                    />
-                    <svg
-                        className="absolute right-3 top-3 h-6 w-6 text-gray-400"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
-                    </svg>
-                </div>
-                <datalist id="song-list">
-                    {csvData.map((song, index) => (
-                        <option key={index} value={song.Track} />
-                    ))}
-                </datalist>
-            </div>
-            <svg ref={svgRef}></svg>
+            {isLoading ? (
+                <div>Loading...</div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <StatCard title="Unique Songs" value={stats.uniqueSongs} />
+                        <StatCard title="Unique Albums" value={stats.uniqueAlbums} />
+                        <StatCard title="Unique Artists" value={stats.uniqueArtists} />
+                    </div>
+                    <div className="m-4">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search for a song"
+                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                onChange={(e) =>
+                                    debouncedSetSelectedSong(e.target.value)
+                                }
+                                list="song-list"
+                            />
+                            <svg
+                                className="absolute right-3 top-3 h-6 w-6 text-gray-400"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                        </div>
+                        <datalist id="song-list">
+                            {csvData.map((song, index) => (
+                                <option key={index} value={song.Track} />
+                            ))}
+                        </datalist>
+                    </div>
+                    <svg ref={svgRef}></svg>
+                </>
+            )}
         </div>
     );
+    
 };
 
 export default Stats;

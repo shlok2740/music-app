@@ -39,8 +39,6 @@ const Summary = () => {
         return sorted.length > 0 ? sorted[0][0] : "No data";
     };
 
-   
-
     const mostPlayedSong = getMostLeastCommon("Track");
     const leastPlayedSong = getMostLeastCommon("Track", true);
     const mostListenedArtist = getMostLeastCommon("Artist");
@@ -68,8 +66,7 @@ const Summary = () => {
 
         rawData.forEach((item) => {
             const timeParts = item.time.split(":");
-            const timeInMinutes =
-                parseInt(timeParts[0])
+            const timeInMinutes = parseInt(timeParts[0]);
 
             if (timeInMinutes <= 10) timeRanges["0-10"]++;
             else if (timeInMinutes <= 20) timeRanges["11-20"]++;
@@ -156,9 +153,13 @@ const Summary = () => {
                             />
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-4 mb-8">
-                       
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 mx-2">
+                        <div className="flex flex-col justify-center">
+                            <h3 className="text-2xl font-bold mb-4 text-indigo-600">
+                                Distribution of Songs by Time Played
+                            </h3>
+                        </div>
+                        <div className="flex items-center justify-center">
                             <PieChart
                                 data={getPieChartData()}
                                 options={pieOptions}

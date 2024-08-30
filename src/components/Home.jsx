@@ -1,6 +1,12 @@
 import { FaMusic, FaUser, FaClock } from "react-icons/fa";
+import { injectSpeedInsights } from "@vercel/speed-insights";
+import { useEffect } from "react";
 
 export default function Home() {
+    useEffect(() => {
+        injectSpeedInsights();
+    }, []);
+
     return (
         <div className="flex flex-col min-h-screen">
             <main className="flex-1">
