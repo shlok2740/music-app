@@ -5,7 +5,6 @@ import Sidebar from "./components/Sidebar";
 import Stats from "./components/Stats";
 import Summary from "./components/Summary";
 import CSV from "./csv/CSV";
-import Searchbar from "./components/Searchbar";
 
 const routes = [
     { path: "/", element: <Home /> },
@@ -23,7 +22,6 @@ function App() {
                     <Sidebar />
                 </aside>
                 <main className="flex-1 overflow-y-auto">
-                    <Searchbar/>
                     <Routes>
                         {routes.map(({ path, element }) => (
                             <Route key={path} path={path} element={element} />

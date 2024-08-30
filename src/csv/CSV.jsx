@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Papa from "papaparse";
 
+const parseDate = (dateStr) => {
+    // Replace '.' with '/' to standardize the date format
+    const standardizedDateStr = dateStr.replace(/\./g, "/");
+
+    // Parse the date string into a Date object
+    const dateObj = new Date(standardizedDateStr);
+
+    // Extract the date and time components
+    const date = dateObj.toLocaleDateString("en-US"); // MM/DD/YYYY
+    const time = dateObj.toLocaleTimeString("it-IT", {
+        minute: "2-digit",
+        second: "2-digit",
+    });
+
+    return { date, time };
+};
+
 const CSV = () => {
     const [fileName, setFileName] = useState("");
     const [isUploading, setIsUploading] = useState(false);
@@ -26,15 +43,26 @@ const CSV = () => {
                         setIsUploading(false);
                         console.log("Parsing complete!");
 
-                        // Set table data and columns
-                        setTableData(results.data);
-                        setColumns(results.meta.fields);
+                        const processedData = results.data.map((row) => {
+                            const newRow = { ...row };
+                            if (newRow.Timestamp) {
+                                const { date, time } = parseDate(
+                                    newRow.Timestamp
+                                );
+                                newRow.date = date;
+                                newRow.time = time;
+                                delete newRow.Timestamp; // Optionally delete the original timestamp
+                            }
+                            return newRow;
+                        });
 
-                        // Store the parsed data in localStorage
+                        setTableData(processedData);
+                        setColumns(Object.keys(processedData[0] || {}));
+
                         try {
                             localStorage.setItem(
                                 "csvData",
-                                JSON.stringify(results.data)
+                                JSON.stringify(processedData)
                             );
                             console.log("Data stored in localStorage");
                         } catch (err) {
@@ -58,7 +86,6 @@ const CSV = () => {
     };
 
     useEffect(() => {
-        // Load data from localStorage when the component mounts
         const storedData = localStorage.getItem("csvData");
         if (storedData) {
             const parsedData = JSON.parse(storedData);
@@ -76,54 +103,27 @@ const CSV = () => {
             </h2>
             <div className="mb-4">
                 <label
-                    htmlFor="csv-file-input"
-                    className="block w-full px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-300 ease-in-out"
+                    htmlFor="csvFile"
+                    className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                    {fileName ? "Change File" : "Choose CSV File"}
+                    Upload CSV File
                 </label>
                 <input
                     type="file"
+                    id="csvFile"
                     accept=".csv"
                     onChange={handleFileUpload}
-                    id="csv-file-input"
-                    className="hidden"
+                    className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100"
                 />
             </div>
-            {fileName && (
-                <p className="mt-2 text-sm text-gray-600">
-                    Selected file:{" "}
-                    <span className="font-semibold">{fileName}</span>
-                </p>
-            )}
-            {isUploading && (
-                <div className="mt-4 flex items-center justify-center">
-                    <svg
-                        className="animate-spin h-5 w-5 mr-3 text-blue-600"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            fill="none"
-                        ></circle>
-                        <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                    </svg>
-                    <span className="text-blue-600">
-                        Uploading and parsing...
-                    </span>
-                </div>
-            )}
-            {error && (
-                <p className="mt-4 text-sm text-red-600">Error: {error}</p>
-            )}
+            {isUploading && <p>Uploading...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+            {fileName && <p>File uploaded: {fileName}</p>}
             {tableData.length > 0 && (
                 <Table
                     data={tableData}
@@ -178,58 +178,32 @@ const Table = ({ data, columns, currentPage, rowsPerPage, paginate }) => {
                                     key={colIndex}
                                     className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500"
                                 >
-                                    {row[column]}
+                                    {row[column] || ""}
                                 </td>
                             ))}
                         </tr>
                     ))}
                 </tbody>
             </table>
-
-            <div className="mt-4 flex flex-wrap justify-center items-center">
-                <button
-                    onClick={() => paginate(Math.max(1, startPage - 5))}
-                    disabled={currentPage <= 5}
-                    className="m-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 disabled:opacity-50"
+            <div className="mt-4 flex justify-center">
+                <nav
+                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                    aria-label="Pagination"
                 >
-                    &lt;&lt;
-                </button>
-                <button
-                    onClick={() => paginate(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="m-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 disabled:opacity-50"
-                >
-                    &lt;
-                </button>
-                {pageNumbers.map((number) => (
-                    <button
-                        key={number}
-                        onClick={() => paginate(number)}
-                        className={`m-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded ${
-                            currentPage === number
-                                ? "bg-blue-500 text-white"
-                                : "bg-gray-200"
-                        }`}
-                    >
-                        {number}
-                    </button>
-                ))}
-                <button
-                    onClick={() =>
-                        paginate(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="m-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 disabled:opacity-50"
-                >
-                    &gt;
-                </button>
-                <button
-                    onClick={() => paginate(Math.min(totalPages, endPage + 1))}
-                    disabled={endPage === totalPages}
-                    className="m-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded bg-gray-200 disabled:opacity-50"
-                >
-                    &gt;&gt;
-                </button>
+                    {pageNumbers.map((number) => (
+                        <button
+                            key={number}
+                            onClick={() => paginate(number)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                currentPage === number
+                                    ? "z-10 bg-indigo-50 border-indigo-500 text-indigo-600"
+                                    : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                            }`}
+                        >
+                            {number}
+                        </button>
+                    ))}
+                </nav>
             </div>
         </div>
     );
