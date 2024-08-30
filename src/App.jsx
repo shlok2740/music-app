@@ -17,12 +17,11 @@ const routes = [
 function App() {
     return (
         <Router>
-            <div className="flex h-screen bg-gray-100 font-one">
+            <div className="flex h-screen bg-blue-300 p-2 font-one">
                 <aside className="sticky top-0 h-screen">
                     <Sidebar />
                 </aside>
                 <main className="flex-1 overflow-y-auto">
-
                     <Routes>
                         {routes.map(({ path, element }) => (
                             <Route key={path} path={path} element={element} />

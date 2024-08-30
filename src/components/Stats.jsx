@@ -4,10 +4,16 @@ import React, {
     useRef,
     useMemo,
     useCallback,
-    useLayoutEffect,
 } from "react";
 import * as d3 from "d3";
 import { debounce } from "lodash";
+
+const StatCard = React.memo(({ title, value }) => (
+    <div className="bg-white p-4 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:-translate-y-2 hover:shadow-lg">
+        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        <p className="text-2xl">{value}</p>
+    </div>
+));
 
 const Stats = () => {
     const [stats, setStats] = useState({
@@ -17,6 +23,7 @@ const Stats = () => {
     });
     const [csvData, setCsvData] = useState([]);
     const [selectedSong, setSelectedSong] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
     const svgRef = useRef();
     const containerRef = useRef();
 
@@ -65,19 +72,14 @@ const Stats = () => {
 
         const relatedSongs = csvData.filter(
             (song) =>
-                song.Artist === selectedSongData.Artist ||
-                song.Album === selectedSongData.Album
+                song.Artist === selectedSongData.Artist &&
+                song.Track !== selectedSong
         );
 
         const uniqueSongs = new Set();
         const root = d3.hierarchy({
             name: selectedSong,
             children: relatedSongs
-                .filter(
-                    (song) =>
-                        song.Artist === selectedSongData.Artist &&
-                        song.Track !== selectedSong
-                )
                 .reduce((acc, song) => {
                     if (!uniqueSongs.has(song.Track)) {
                         uniqueSongs.add(song.Track);
@@ -97,33 +99,25 @@ const Stats = () => {
             .enter()
             .append("path")
             .attr("class", "link")
-            .attr(
-                "d",
-                (d) => `
-                M${d.y * Math.cos(((d.x - 90) / 180) * Math.PI)},${
-                    d.y * Math.sin(((d.x - 90) / 180) * Math.PI)
+            .attr("d", (d) => {
+                const startAngle = ((d.x - 90) / 180) * Math.PI;
+                const startRadius = d.y;
+                const endAngle = ((d.parent.x - 90) / 180) * Math.PI;
+                const endRadius = d.parent.y;
+                const midRadius = (startRadius + endRadius) / 2;
+                return `
+          M${startRadius * Math.cos(startAngle)},${
+                    startRadius * Math.sin(startAngle)
                 }
-                C${
-                    ((d.y + d.parent.y) / 2) *
-                    Math.cos(((d.x - 90) / 180) * Math.PI)
-                },${
-                    ((d.y + d.parent.y) / 2) *
-                    Math.sin(((d.x - 90) / 180) * Math.PI)
+          C${midRadius * Math.cos(startAngle)},${
+                    midRadius * Math.sin(startAngle)
                 }
-                ${
-                    ((d.y + d.parent.y) / 2) *
-                    Math.cos(((d.parent.x - 90) / 180) * Math.PI)
-                },${
-                    ((d.y + d.parent.y) / 2) *
-                    Math.sin(((d.parent.x - 90) / 180) * Math.PI)
-                }
-                ${d.parent.y * Math.cos(((d.parent.x - 90) / 180) * Math.PI)},${
-                    d.parent.y * Math.sin(((d.parent.x - 90) / 180) * Math.PI)
-                }
-            `
-            )
+          ${midRadius * Math.cos(endAngle)},${midRadius * Math.sin(endAngle)}
+          ${endRadius * Math.cos(endAngle)},${endRadius * Math.sin(endAngle)}
+        `;
+            })
             .style("fill", "none")
-            .style("stroke", "#ccc");
+            .style("stroke", "#111fff");
 
         const node = svg
             .selectAll(".node")
@@ -132,7 +126,7 @@ const Stats = () => {
             .append("g")
             .attr(
                 "class",
-                (d) => "node" + (d.children ? " node--internal" : " node--leaf")
+                (d) => `node${d.children ? " node--internal" : " node--leaf"}`
             )
             .attr("transform", (d) => `rotate(${d.x - 90})translate(${d.y})`);
 
@@ -148,8 +142,6 @@ const Stats = () => {
             .text((d) => d.data.name);
     }, [selectedSong, csvData]);
 
-    const [isLoading, setIsLoading] = useState(true);
-
     useEffect(() => {
         setIsLoading(true);
         if (selectedSong && csvData.length > 0) {
@@ -158,23 +150,10 @@ const Stats = () => {
         setIsLoading(false);
     }, [selectedSong, csvData, createDendrogram]);
 
-    useLayoutEffect(() => {
-        const container = containerRef.current;
-        const width = container.clientWidth;
-        const height = Math.min(width, window.innerHeight - 30);
-    }, []);
-
     const debouncedSetSelectedSong = useMemo(
         () => debounce((value) => setSelectedSong(value), 300),
         []
     );
-
-    const StatCard = React.memo(({ title, value }) => (
-        <div className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">{title}</h3>
-            <p className="text-2xl">{value}</p>
-        </div>
-    ));
 
     return (
         <div className="mt-6 mx-2" ref={containerRef}>
@@ -182,6 +161,9 @@ const Stats = () => {
                 <div>Loading...</div>
             ) : (
                 <>
+                    <h2 className="text-2xl font-bold mb-4 text-center text-indigo-600">
+                        Overview
+                    </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                         <StatCard
                             title="Unique Songs"

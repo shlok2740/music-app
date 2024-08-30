@@ -6,7 +6,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 const PieChart = ({ data, options }) => {
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full justify-center bg-white rounded-lg">
       <Pie data={data} options={options} />
     </div>
   );

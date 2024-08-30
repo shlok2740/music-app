@@ -6,7 +6,11 @@ export default {
             one: ["Matter SQ Light"],
             two: ["Matter SQ Regular"],
         },
-        extend: {},
+        extend: {
+            backgroundImage: {
+                bg: "url('./assets/bg.png')",
+            },
+        },
     },
     plugins: [],
 };
